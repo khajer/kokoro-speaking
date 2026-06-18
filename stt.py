@@ -1,4 +1,5 @@
-import tempfile
+import os
+from datetime import datetime
 import numpy as np
 import whisper
 import sounddevice as sd
@@ -6,6 +7,7 @@ import soundfile as sf
 
 SAMPLE_RATE = 16000
 
+os.makedirs("input", exist_ok=True)
 model = whisper.load_model("base")
 
 print("Recording… Ctrl+C to stop and transcribe")
@@ -19,8 +21,8 @@ except KeyboardInterrupt:
     pass
 
 audio = np.concatenate(chunks)
-with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-    sf.write(f.name, audio, SAMPLE_RATE)
-    result = model.transcribe(f.name)
+path = f"input/{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
+sf.write(path, audio, SAMPLE_RATE)
+result = model.transcribe(path)
 
 print(result["text"])
