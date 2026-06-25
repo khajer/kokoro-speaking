@@ -1,0 +1,8 @@
+kokoro>=0.8.4
+misaki>=0.9.4
+soundfile>=0.13.1
+phonemizer>=3.2.1
+espeakng-loader>=0.2.4
+torch>=2.12.0
+pandas>=2.2
+spacy>=3.8.14
