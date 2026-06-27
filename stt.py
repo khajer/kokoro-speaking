@@ -39,4 +39,7 @@ path = f"input/{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
 sf.write(path, audio, SAMPLE_RATE)
 result = model.transcribe(path)
 
-print(result["text"])
+text = result["text"].strip()
+print(text)
+with open("conversation.log", "a") as f:
+    f.write(f"[IN][{datetime.now().strftime('%Y-%m-%d %H:%M')}] {text}\n")
