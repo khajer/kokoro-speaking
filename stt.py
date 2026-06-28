@@ -42,4 +42,4 @@ result = model.transcribe(path)
 text = result["text"].strip()
 print(text)
 with open("conversation.log", "a") as f:
-    f.write(f"[IN][{datetime.now().strftime('%Y-%m-%d %H:%M')}] {text}\n")
+    f.write(f"[IN][{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {text}\n")
