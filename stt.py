@@ -1,4 +1,8 @@
 import os
+import sys
+import tty
+import termios
+import threading
 from datetime import datetime
 import numpy as np
 import whisper
@@ -6,33 +10,38 @@ import sounddevice as sd
 import soundfile as sf
 
 SAMPLE_RATE = 16000
+CHUNK_SIZE = int(SAMPLE_RATE * 0.1)  # 100ms chunks
 
 os.makedirs("input", exist_ok=True)
 model = whisper.load_model("base")
 
-SILENCE_THRESHOLD = 0.01  # ponytail: tune this if mic is too/not sensitive
-SILENCE_SECONDS = 2
-CHUNK_SIZE = int(SAMPLE_RATE * 0.1)  # 100ms chunks
-
-print("Recording… stops after 2s silence or Ctrl+C")
+print("Recording… press Space to stop")
 chunks = []
-silent_chunks = 0
-max_silent = int(SILENCE_SECONDS / 0.1)
+stop_flag = threading.Event()
+
+fd = sys.stdin.fileno()
+old_settings = termios.tcgetattr(fd)
+
+def wait_for_space():
+    try:
+        tty.setraw(fd)
+        while True:
+            ch = sys.stdin.read(1)
+            if ch == " ":
+                stop_flag.set()
+                break
+    except Exception:
+        stop_flag.set()
+
+threading.Thread(target=wait_for_space, daemon=True).start()
 
 try:
     with sd.InputStream(samplerate=SAMPLE_RATE, channels=1) as stream:
-        while True:
+        while not stop_flag.is_set():
             data, _ = stream.read(CHUNK_SIZE)
             chunks.append(data)
-            rms = np.sqrt(np.mean(data ** 2))
-            if rms < SILENCE_THRESHOLD:
-                silent_chunks += 1
-                if silent_chunks >= max_silent:
-                    break
-            else:
-                silent_chunks = 0
-except KeyboardInterrupt:
-    pass
+finally:
+    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 audio = np.concatenate(chunks)
 path = f"input/{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
